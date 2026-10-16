@@ -32,6 +32,24 @@ jobs:
       - uses: astral-sh/setup-uv@v10.3.0
       - name: Install (CPU PyTorch)
         run: uv sync --locked --extra cpu
+      # The tiny CPU tests run bf16/fp16 matrix multiplies on the CPU (the real benchmark runs them
+      # on the GPU). On some hosted Windows runners the CPU PyTorch wheel stops with an illegal
+      # instruction (0xc000001d) in its AVX-512 path; this step shows the CPU and which dtypes
+      # crash at the default instruction set, then the Windows job is limited to AVX2.
+      - name: CPU info and CPU matmul probe (default instruction set)
+        shell: bash
+        run: |
+          uv run --no-sync python -c "import platform, os, torch; print(platform.processor() or platform.machine(), os.cpu_count(), 'threads;', 'torch', torch.__version__, 'cpu capability', torch.backends.cpu.get_cpu_capability())"
+          for dt in bfloat16 float16 float32; do
+            uv run --no-sync python -c "import torch; a = torch.randn(256, 256, dtype=torch.$dt); torch.mm(a, a); print('$dt mm ok')" || echo "$dt mm: process died (exit $?)"
+          done
+      - name: Limit the CPU instruction set to AVX2 (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          echo "ATEN_CPU_CAPABILITY=avx2" >> "$GITHUB_ENV"
+          echo "ONEDNN_MAX_CPU_ISA=AVX2" >> "$GITHUB_ENV"
+          echo "MKL_ENABLE_INSTRUCTIONS=AVX2" >> "$GITHUB_ENV"
       - name: Show the scenario plan
         run: uv run --no-sync python -m agbench list --suite full
       - name: Tests
