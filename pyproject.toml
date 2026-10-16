@@ -1,0 +1,72 @@
+[project]
+name = "agbench"
+version = "0.1.0"
+description = "Synthetic-audio GPU benchmark for speech anti-spoofing workloads"
+requires-python = ">=3.12,<3.13"
+license = "MIT"
+dependencies = [
+  "transformers==5.20.0",
+  "huggingface-hub>=1.31,<3",
+  "safetensors>=0.8",
+  "numpy==2.5.4",
+  "scipy==1.18.1",
+  "soundfile==0.14.0",
+  "nvidia-ml-py>=12.570",
+  "psutil>=7.0",
+  "threadpoolctl>=3.5",
+  "matplotlib==3.11.2",
+]
+
+# Pick exactly one torch build with an extra:
+#   uv sync --frozen --extra cu130   (default, NVIDIA driver >= 580, includes Blackwell sm_120)
+#   uv sync --frozen --extra cu128   (fallback, driver 570-579, torch 2.11.0)
+#   uv sync --locked --extra cpu     (CI / CPU-only tests; --locked also checks the lock)
+# Then always run with "uv run --no-sync ...": a plain "uv run" re-syncs without the extra
+# and removes torch.
+[project.optional-dependencies]
+cu130 = ["torch==2.14.1"]
+cu128 = ["torch==2.11.0"]
+cpu = ["torch==2.14.1"]
+
+[dependency-groups]
+dev = ["pytest==9.1.1", "jsonschema>=4.23"]
+
+[tool.uv]
+conflicts = [[{ extra = "cu130" }, { extra = "cu128" }, { extra = "cpu" }]]
+environments = [
+  "sys_platform == 'linux' and platform_machine == 'x86_64'",
+  "sys_platform == 'win32' and platform_machine == 'AMD64'",
+]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu130", extra = "cu130" },
+  { index = "pytorch-cu128", extra = "cu128" },
+  { index = "pytorch-cpu", extra = "cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["agbench"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

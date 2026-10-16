@@ -1,0 +1,98 @@
+{
+  "schema_version": "1",
+  "notes": "Reference numbers come from real training logs (torch 2.2.2, transformers 4.x, data loading included, bf16 autocast, AdamW, grad clip 1.0, strict deterministic algorithms with CUBLAS_WORKSPACE_CONFIG=:4096:8, TF32 off for matmuls and cuDNN convolutions, flash attention off for clips longer than 4 s, LayerDrop 0, activation checkpointing off, 2 spawn DataLoader workers unless noted). They are not runs of this benchmark; the benchmark's e2e.w2v2b.6s.bs16.bf16 and e2e.xlsr.6s.bs16.bf16 rows use the same numerics and loader setup. agbench_runs will hold exact numbers from this benchmark on the same GPUs later.",
+  "gpus": [
+    {
+      "gpu_key": "rtx-3090-24gb",
+      "label": "RTX 3090 (workstation)",
+      "spec_approx": {"vram_gb": 24, "mem_bw_gbps": 936, "fp32_tflops": 35.6, "bf16_dense_tflops_fp32acc": 71},
+      "log_references": [
+        {
+          "workload": "W2V2 Base, 6 s, batch 16, train",
+          "maps_to": ["e2e.w2v2b.6s.bs16.bf16", "train.w2v2b.6s.bs16.bf16"],
+          "train_clips_per_s": 101.8,
+          "train_min_per_epoch": 29.9,
+          "dev_clips_per_s": 303,
+          "peak_alloc_gib": 5.25,
+          "peak_reserved_gib": 6.63,
+          "rawboost": false,
+          "provenance": "median of 14 epoch records of one run; FLAC decode + crop in 2 spawn workers, no augmentation"
+        },
+        {
+          "workload": "XLS-R 300M, 6 s, batch 16, train",
+          "maps_to": ["e2e.xlsr.6s.bs16.bf16", "train.xlsr.6s.bs16.bf16"],
+          "train_clips_per_s": 38,
+          "is_estimate": true,
+          "provenance": "estimate from partial runs and a loader emulation (~36.9 clips/s without augmentation); not a completed epoch"
+        },
+        {
+          "workload": "XLSR-53 + WavLM Base fusion, 4 s, batch 16, train",
+          "maps_to": ["train.fusion.4s.bs16.bf16"],
+          "train_clips_per_s": 40.6,
+          "train_min_per_epoch": 74.9,
+          "peak_alloc_gib": 13.6,
+          "peak_reserved_gib": 14.9,
+          "provenance": "XLSR-53 has the same architecture as XLS-R 300M; this benchmark uses XLS-R 300M"
+        }
+      ],
+      "agbench_runs": []
+    },
+    {
+      "gpu_key": "rtx-a4500-20gb",
+      "label": "RTX A4500 (workstation)",
+      "spec_approx": {"vram_gb": 20, "mem_bw_gbps": 640},
+      "log_references": [
+        {
+          "workload": "W2V2 Base, 6 s, batch 16, train",
+          "maps_to": ["e2e.w2v2b.6s.bs16.bf16", "train.w2v2b.6s.bs16.bf16"],
+          "train_clips_per_s": 72.7,
+          "train_min_per_epoch": 41.8,
+          "dev_clips_per_s": 236,
+          "dev_min": 10.0,
+          "provenance": "pooling-baseline run, 2 workers"
+        },
+        {
+          "workload": "XLS-R 300M, 6 s, batch 16, train",
+          "maps_to": ["e2e.xlsr.6s.bs16.bf16", "train.xlsr.6s.bs16.bf16"],
+          "train_clips_per_s": 28.7,
+          "train_min_per_epoch": 106,
+          "provenance": "steady-state rate of a running job, 2 workers; ~15 GB of 20 GB in use"
+        }
+      ],
+      "agbench_runs": []
+    },
+    {
+      "gpu_key": "a100-40gb-colab",
+      "label": "A100 40 GB (Google Colab)",
+      "spec_approx": {"vram_gb": 40, "mem_bw_gbps": 1555},
+      "log_references": [
+        {
+          "workload": "W2V2 Base, 6 s, Dev scoring",
+          "maps_to": ["infer.w2v2b.6s.bs16.bf16"],
+          "dev_clips_per_s": 450,
+          "provenance": "Dev pass inside a training run"
+        },
+        {
+          "workload": "W2V2 Base, 6 s, batch 16, train with RawBoost",
+          "maps_to": ["e2e.w2v2b.6s.bs16.bf16.rawboost"],
+          "train_clips_per_s": 91,
+          "cpu_bound": true,
+          "provenance": "limited by RawBoost on the CPU (observed 90.8 clips/s); not a GPU number - do not compute GPU ratios from it"
+        }
+      ],
+      "agbench_runs": []
+    }
+  ],
+  "estimates": [
+    {
+      "gpu_key": "rtx-5060-ti-16gb",
+      "label": "RTX 5060 Ti 16 GB (pre-run estimate)",
+      "spec_approx": {"vram_gb": 16, "mem_bw_gbps": 448, "fp32_tflops": 23.7, "bf16_dense_tflops_fp32acc_derived": 47, "pcie": "5.0 x8"},
+      "basis": "0.55x RTX 3090 (range 0.45-0.67), see SPEC section 6.3",
+      "train_w2v2b_6s_clips_per_s": [46, 56, 68],
+      "dev_w2v2b_6s_clips_per_s": 165,
+      "train_xlsr_6s_clips_per_s": [17, 20, 25],
+      "train_fusion_4s_clips_per_s": 21
+    }
+  ]
+}

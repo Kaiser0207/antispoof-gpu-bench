@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:agbench:results-schema:1",
+  "title": "agbench results JSONL record (schema_version 1)",
+  "description": "One JSON object per line of results/<gpu_slug>_<YYYYMMDD>.jsonl. Same rules as agbench.schema.validate_record.",
+  "oneOf": [
+    {"$ref": "#/$defs/run_start"},
+    {"$ref": "#/$defs/scenario"},
+    {"$ref": "#/$defs/run_end"}
+  ],
+  "$defs": {
+    "nullable_string": {"type": ["string", "null"]},
+    "number_or_null": {"type": ["number", "null"]},
+    "run_start": {
+      "type": "object",
+      "required": ["kind", "schema_version", "run_id", "suite", "started_utc", "agbench_version",
+                   "git_commit", "gpu_slug", "env_fingerprint", "settings", "env"],
+      "properties": {
+        "kind": {"const": "run_start"},
+        "schema_version": {"const": "1"},
+        "run_id": {"type": "string"},
+        "suite": {"type": "string"},
+        "started_utc": {"type": "string"},
+        "agbench_version": {"type": "string"},
+        "git_commit": {"$ref": "#/$defs/nullable_string"},
+        "gpu_slug": {"type": "string"},
+        "env_fingerprint": {"type": "string"},
+        "settings": {"type": "object"},
+        "env": {
+          "type": "object",
+          "required": ["os_family", "python"],
+          "properties": {
+            "os_family": {"type": "string"},
+            "python": {"type": "string"}
+          }
+        }
+      }
+    },
+    "attempt": {
+      "type": "object",
+      "required": ["micro_batch", "accum", "status"],
+      "properties": {
+        "micro_batch": {"type": "integer"},
+        "accum": {"type": "integer"},
+        "status": {"type": "string"},
+        "peak_reserved_gib": {"$ref": "#/$defs/number_or_null"},
+        "mem_cap_gib": {"$ref": "#/$defs/number_or_null"},
+        "vram_free_start_gib": {"$ref": "#/$defs/number_or_null"},
+        "wall_s": {"$ref": "#/$defs/number_or_null"}
+      }
+    },
+    "fallback": {
+      "type": "object",
+      "required": ["attempts"],
+      "properties": {
+        "ladder": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2}}
+          ]
+        },
+        "attempts": {"type": "array", "items": {"$ref": "#/$defs/attempt"}},
+        "used": {"type": ["object", "null"]},
+        "fits_requested": {"type": "boolean"}
+      }
+    },
+    "error": {
+      "type": "object",
+      "required": ["type", "message"],
+      "properties": {
+        "type": {"type": "string"},
+        "message": {"type": "string"},
+        "exit_code": {"type": ["integer", "null"]},
+        "traceback_tail": {"type": ["string", "null"]}
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "required": ["kind", "schema_version", "run_id", "gpu_slug", "env_fingerprint", "scenario_id",
+                   "scenario_hash", "workload", "workload_version", "category", "suite", "status",
+                   "status_detail", "started_utc", "finished_utc", "wall_s", "params", "measure",
+                   "fallback", "metrics", "estimates", "telemetry", "timeseries", "extra", "error",
+                   "log_file"],
+      "properties": {
+        "kind": {"const": "scenario"},
+        "schema_version": {"const": "1"},
+        "run_id": {"type": "string"},
+        "gpu_slug": {"type": "string"},
+        "env_fingerprint": {"type": "string"},
+        "scenario_id": {"type": "string"},
+        "scenario_hash": {"type": "string"},
+        "workload": {"type": "string"},
+        "workload_version": {"type": "integer"},
+        "category": {"enum": ["basics", "train", "frozen", "infer", "e2e", "cpu", "sustain"]},
+        "suite": {"type": "string"},
+        "status": {"enum": ["ok", "oom", "error", "timeout", "crashed", "skipped"]},
+        "status_detail": {"type": "string"},
+        "started_utc": {"type": "string"},
+        "finished_utc": {"type": "string"},
+        "wall_s": {"type": "number"},
+        "params": {"type": "object"},
+        "measure": {"type": "object"},
+        "fallback": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/fallback"}]},
+        "metrics": {"type": "object"},
+        "estimates": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/number_or_null"}
+        },
+        "telemetry": {
+          "type": "object",
+          "required": ["source"],
+          "properties": {"source": {"enum": ["nvml", "nvidia-smi", "none"]}}
+        },
+        "timeseries": {"type": ["array", "null"]},
+        "extra": {"type": "object"},
+        "error": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/error"}]},
+        "log_file": {"$ref": "#/$defs/nullable_string"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "ok"}}},
+          "else": {"properties": {"metrics": {"maxProperties": 0}}}
+        },
+        {
+          "if": {"properties": {"status": {"enum": ["error", "timeout", "crashed"]}}},
+          "then": {"properties": {"error": {"$ref": "#/$defs/error"}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "ok"},
+                                "category": {"enum": ["train", "frozen", "infer", "e2e", "sustain"]}}},
+          "then": {"properties": {"metrics": {"required": ["clips_per_s", "step_ms_median"],
+                                              "properties": {"clips_per_s": {"type": "number"},
+                                                             "step_ms_median": {"type": "number"}}}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "ok"}, "workload": {"const": "basics.matmul"}}},
+          "then": {"properties": {"metrics": {"required": ["tflops"],
+                                              "properties": {"tflops": {"type": "object"}}}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "ok"},
+                                "workload": {"enum": ["basics.membw", "basics.pcie"]}}},
+          "then": {"properties": {"metrics": {"required": ["gbps"],
+                                              "properties": {"gbps": {"type": "object"}}}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "ok"}, "category": {"const": "cpu"}}},
+          "then": {"properties": {"metrics": {"required": ["clips_per_s"],
+                                              "properties": {"clips_per_s": {"type": "number"}}}}}
+        }
+      ]
+    },
+    "run_end": {
+      "type": "object",
+      "required": ["kind", "schema_version", "run_id", "finished_utc", "wall_s", "counts", "interrupted"],
+      "properties": {
+        "kind": {"const": "run_end"},
+        "schema_version": {"const": "1"},
+        "run_id": {"type": "string"},
+        "finished_utc": {"type": "string"},
+        "wall_s": {"type": "number"},
+        "counts": {
+          "type": "object",
+          "required": ["ok", "oom", "error", "timeout", "crashed", "skipped", "cached"],
+          "properties": {
+            "ok": {"type": "integer"}, "oom": {"type": "integer"}, "error": {"type": "integer"},
+            "timeout": {"type": "integer"}, "crashed": {"type": "integer"},
+            "skipped": {"type": "integer"}, "cached": {"type": "integer"}
+          }
+        },
+        "interrupted": {"type": "boolean"}
+      }
+    }
+  }
+}

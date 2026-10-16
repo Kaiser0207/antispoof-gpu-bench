@@ -1,0 +1,49 @@
+antispoof-gpu-bench
+Copyright (c) 2026 Kaiser0207. Licensed under the MIT License (see LICENSE).
+
+Third-party work this repository builds on
+------------------------------------------
+
+RawBoost
+  H. Tak, M. Kamble, J. Patino, M. Todisco, N. Evans, "RawBoost: A Raw Data Boosting and
+  Augmentation Method applied to Automatic Speaker Verification Anti-Spoofing", ICASSP 2022.
+  Official code: https://github.com/TakHemlata/RawBoost-antispoofing
+  (MIT License, Copyright (c) 2021 Hemlata; full text in LICENSES/RawBoost-antispoofing-MIT.txt).
+  agbench/data/rawboost.py is a re-implementation that follows the official MIT-licensed
+  implementation: the same operations, default parameters and parameter names (for example
+  nBands, minF, minCoeff, minBiasLinNonLin), rewritten for this benchmark with no lines copied.
+  The MIT copyright and permission notice of the official code applies to these parts:
+
+    Copyright (c) 2021 Hemlata
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+    and associated documentation files (the "Software"), to deal in the Software without
+    restriction, including without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or
+    substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+    BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Pre-trained models (downloaded at run time from Hugging Face; not redistributed here)
+  facebook/wav2vec2-base         https://huggingface.co/facebook/wav2vec2-base         (model card licence: Apache-2.0)
+  facebook/wav2vec2-xls-r-300m   https://huggingface.co/facebook/wav2vec2-xls-r-300m   (model card licence: Apache-2.0)
+  facebook/wav2vec2-large        https://huggingface.co/facebook/wav2vec2-large        (model card licence: Apache-2.0)
+  microsoft/wavlm-base           https://huggingface.co/microsoft/wavlm-base           (model card points to the
+                                                                                       microsoft/UniSpeech licence,
+                                                                                       CC BY-SA 3.0 when checked)
+  Each model is used under its own licence; check the model card before any use beyond this benchmark.
+
+Software dependencies (installed by uv from PyPI and download.pytorch.org)
+  PyTorch, Hugging Face transformers and huggingface-hub, NumPy, SciPy, soundfile (libsndfile),
+  matplotlib, psutil, threadpoolctl, nvidia-ml-py: each under its own licence.
+
+ASVspoof 5
+  Only the published clip counts of the ASVspoof 5 training, development and evaluation sets are
+  used, to convert measured speed into minutes per epoch. No ASVspoof data is used or distributed.
